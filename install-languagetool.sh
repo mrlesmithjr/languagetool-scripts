@@ -1,31 +1,32 @@
 #!/bin/bash
 
-# LanguageTool Installation & Update Script for macOS
-# Installs a local LanguageTool server that works with Obsidian
+# LanguageTool Installation & Setup Script for macOS
+# This script installs a local LanguageTool server, which provides a privacy-focused alternative to cloud-based grammar checkers.
+# It integrates seamlessly with tools like Obsidian, VSCode, and other text editors for offline grammar and spell-checking.
 
 set -e  # Exit on error
 
-# Color output
+# Color output for clarity
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
-# Default configuration
+# Default configuration values
 DEFAULT_VERSION="6.6"
 USE_SNAPSHOT=false
 PORT=8081
 INSTALL_DIR="$HOME/.languagetool"
 PLIST="$HOME/Library/LaunchAgents/org.languagetool.server.plist"
 
-# Parse command line arguments
+# Parse command-line arguments for custom setup
 while [[ "$#" -gt 0 ]]; do
   case $1 in
-    -v|--version) VERSION="$2"; shift ;;
-    -s|--snapshot) USE_SNAPSHOT=true ;;
-    -p|--port) PORT="$2"; shift ;;
-    -h|--help) 
+    -v|--version) VERSION="$2"; shift ;;  # Set specific LanguageTool version
+    -s|--snapshot) USE_SNAPSHOT=true ;;   # Use snapshot version for development builds
+    -p|--port) PORT="$2"; shift ;;        # Set a custom server port
+    -h|--help)
       echo "Usage: $0 [options]"
       echo "Options:"
       echo "  -v, --version VERSION   Specify LanguageTool version (default: $DEFAULT_VERSION)"
@@ -34,7 +35,7 @@ while [[ "$#" -gt 0 ]]; do
       echo "  -h, --help              Show this help message"
       exit 0
       ;;
-    *) echo "Unknown parameter: $1"; exit 1 ;;
+    *) echo "Unknown parameter: $1"; exit 1 ;;  # Handle invalid parameters
   esac
   shift
 done
@@ -72,6 +73,7 @@ fail() {
   exit 1
 }
 
+# Step 1: Check system requirements
 section "LanguageTool Setup (Version $VERSION)"
 step "Using URL: $LT_URL"
 step "Checking system requirements..."
@@ -88,7 +90,7 @@ if ! command -v brew &>/dev/null; then
   fi
 fi
 
-# Setup Java properly
+# Step 2: Setup Java
 section "Java Setup"
 step "Checking for Java installation..."
 
@@ -98,12 +100,9 @@ brew install --quiet openjdk
 # Verify Java was installed
 if ! command -v java &>/dev/null; then
   step "Creating Java symlinks..."
-  # Make sure the path exists first
   sudo mkdir -p /Library/Java/JavaVirtualMachines/
-  # Create symlink to make Java accessible system-wide
   sudo ln -sfn "$(brew --prefix)/opt/openjdk/libexec/openjdk.jdk" /Library/Java/JavaVirtualMachines/openjdk.jdk
   
-  # Add Java to PATH in shell config if not already added
   JAVA_PATH="$(brew --prefix)/opt/openjdk/bin"
   SHELL_CONFIG="$HOME/.zshrc"
   if [ -f "$HOME/.bash_profile" ]; then
@@ -128,39 +127,32 @@ else
   success "Java $JAVA_VERSION is installed and working"
 fi
 
-# Download and install LanguageTool
+# Step 3: Download and Install LanguageTool
 section "LanguageTool Installation"
 step "Creating installation directory..."
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-# Check if we're updating or installing fresh
+# Backup existing LanguageTool directory if updating
 if [ -d "$INSTALL_DIR/LanguageTool-$VERSION" ]; then
   step "Updating existing LanguageTool $VERSION installation..."
-  # Stop any running instances before update
   launchctl unload "$PLIST" 2>/dev/null || true
   pkill -f languagetool-server.jar 2>/dev/null || true
-  # Move the old directory as backup
   mv "$INSTALL_DIR/LanguageTool-$VERSION" "$INSTALL_DIR/LanguageTool-$VERSION.backup-$(date +%Y%m%d%H%M%S)"
   success "Backed up previous installation"
 fi
 
+# Download LanguageTool zip file
 step "Downloading LanguageTool $VERSION..."
 curl -L -o "LanguageTool-$VERSION.zip" "$LT_URL" || fail "Download failed"
 
+# Extract downloaded files
 step "Extracting files..."
 unzip -o -q "LanguageTool-$VERSION.zip" || fail "Extraction failed"
 rm "LanguageTool-$VERSION.zip"
 success "LanguageTool files installed to $INSTALL_DIR"
 
-# Backup existing plist if present
-if [ -f "$PLIST" ]; then
-  step "Backing up existing configuration..."
-  mv "$PLIST" "$PLIST.backup"
-  success "Backed up existing configuration to $PLIST.backup"
-fi
-
-# Create launchd plist file with correct Java path
+# Step 4: Create launchd plist file for automatic startup
 section "Service Configuration"
 step "Creating launchd service..."
 
@@ -204,7 +196,7 @@ EOF
 
 success "Service configuration created"
 
-# Stop any existing service and start the new one
+# Step 5: Start the LanguageTool service
 section "Starting LanguageTool Service"
 step "Loading service..."
 launchctl unload "$PLIST" 2>/dev/null || true
@@ -214,32 +206,7 @@ launchctl load "$PLIST"
 step "Starting server..."
 sleep 3
 
-# Test manually if the server failed to start
-if ! curl -s "http://localhost:${PORT}" > /dev/null; then
-  echo "Service not starting automatically. Trying manual start..."
-  
-  # Kill any existing processes
-  pkill -f languagetool-server.jar 2>/dev/null || true
-  
-  # Try running manually to see errors
-  "$JAVA_PATH" -Xmx512m -cp "${INSTALL_DIR}/LanguageTool-${VERSION}/languagetool-server.jar" org.languagetool.server.HTTPServer --port ${PORT} --allow-origin "*" &
-  
-  # Wait a bit for the server to start
-  sleep 3
-  
-  # Check again if it's running
-  if ! curl -s "http://localhost:${PORT}" > /dev/null; then
-    fail "LanguageTool server failed to start. Check /tmp/languagetool.err for details."
-  else
-    step "Server started manually. Reloading service configuration..."
-    pkill -f languagetool-server.jar
-    launchctl unload "$PLIST" 2>/dev/null || true
-    launchctl load "$PLIST"
-    sleep 2
-  fi
-fi
-
-# Final verification
+# Step 6: Verification
 if curl -s "http://localhost:${PORT}" > /dev/null; then
   section "Verification"
   success "LanguageTool is running at http://localhost:${PORT}"
@@ -254,7 +221,6 @@ if curl -s "http://localhost:${PORT}" > /dev/null; then
   echo "3. Enable 'Auto check on file open' and 'Auto check on text change'"
   echo
   echo "To update in the future, run: $0 --version NEW_VERSION"
-  echo "To use a snapshot version, run: $0 --version VERSION --snapshot"
   echo "To uninstall, run: ./uninstall-languagetool.sh"
   echo
 else

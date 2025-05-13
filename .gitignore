@@ -1,0 +1,36 @@
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore Java-related files (for LanguageTool)
+*.class
+*.jar
+
+# Ignore sensitive or configuration files (if applicable)
+config.json
+.env
+
+# Ignore logs and temporary files
+*.log
+*.swp
+*.swo
+
+# Ignore generated files (if any)
+*.zip
+*.tar.gz
+*.bak
+
+# Ignore dependency manager files (e.g., Homebrew)
+*.brew
+
+# Ignore build and distribution files
+build/
+dist/
+
+# Ignore IDE and editor configuration files (VSCode, IntelliJ, etc.)
+.vscode/
+.idea/
+
+# Ignore macOS system-specific files
+*.swp
+*.swo

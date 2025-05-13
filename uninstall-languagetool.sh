@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # LanguageTool Uninstaller for macOS
-# Completely removes LanguageTool and related configuration
+# Completely removes LanguageTool and related configurations
+# This script is part of a privacy-focused solution for offline grammar and spell checking.
 
 set -e  # Exit on error
 
-# Color output
+# Color output for better readability
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -13,8 +14,8 @@ YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-INSTALL_DIR="$HOME/.languagetool"
-PLIST="$HOME/Library/LaunchAgents/org.languagetool.server.plist"
+INSTALL_DIR="$HOME/.languagetool"          # Default installation directory
+PLIST="$HOME/Library/LaunchAgents/org.languagetool.server.plist"  # launchd service configuration file
 
 # Print section header
 section() {
@@ -31,37 +32,38 @@ success() {
   echo -e "${GREEN}✓ $1${NC}"
 }
 
-section "LanguageTool Uninstaller"
+section "LanguageTool Uninstallation Process"
 
 # Confirm uninstallation
-read -p "Are you sure you want to uninstall LanguageTool? (y/n) " confirm
+read -p "Are you sure you want to uninstall LanguageTool? This will remove the local server and all related files. (y/n) " confirm
 if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-  echo "Uninstall cancelled."
+  echo "Uninstallation cancelled."
   exit 0
 fi
 
-# Stop any running processes
-step "Stopping LanguageTool processes..."
+# Stop any running LanguageTool processes
+step "Stopping any running LanguageTool processes..."
 if pgrep -f languagetool-server.jar > /dev/null; then
   pkill -f languagetool-server.jar
-  success "Stopped running processes"
+  success "Stopped LanguageTool server processes"
 else
   echo "No running LanguageTool processes found"
 fi
 
-# Unload the service
+# Remove launchd service (if loaded)
 step "Removing launchd service..."
 if launchctl list | grep -q "org.languagetool.server"; then
   launchctl unload "$PLIST" 2>/dev/null || true
-  success "Service unloaded"
+  success "LanguageTool launchd service unloaded"
 else
-  echo "No loaded service found"
+  echo "No loaded LanguageTool service found"
 fi
 
-# Remove plist files
+# Remove plist configuration files
+step "Removing service configuration files..."
 if [ -f "$PLIST" ]; then
   rm -f "$PLIST"
-  success "Removed service configuration"
+  success "Removed LanguageTool service configuration"
 fi
 
 if [ -f "$PLIST.backup" ]; then
@@ -69,19 +71,21 @@ if [ -f "$PLIST.backup" ]; then
   success "Removed backup service configuration"
 fi
 
-# Remove installation directory
+# Remove LanguageTool installation files
 if [ -d "$INSTALL_DIR" ]; then
-  step "Removing LanguageTool files..."
+  step "Removing LanguageTool installation directory..."
   rm -rf "$INSTALL_DIR"
-  success "Removed installation directory"
+  success "Removed LanguageTool installation files"
+else
+  echo "No installation directory found at $INSTALL_DIR"
 fi
 
-# Clean up log files
+# Clean up temporary log files
 step "Cleaning up log files..."
 rm -f /tmp/languagetool.out /tmp/languagetool.err
-success "Removed log files"
+success "Removed LanguageTool log files"
 
-# Note: This script intentionally does not remove Java, as it might be used by other applications
+# Note: This script intentionally does not remove Java, as it might be used by other applications on your system
 
 section "Uninstallation Complete"
-echo -e "${GREEN}LanguageTool has been completely removed from your system.${NC}"
+echo -e "${GREEN}LanguageTool has been successfully removed from your system.${NC}"
