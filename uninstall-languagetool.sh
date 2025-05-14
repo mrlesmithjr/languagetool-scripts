@@ -6,7 +6,7 @@
 
 set -e  # Exit on error
 
-# Color output for better readability
+# Color output for readability
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 # Configuration
 INSTALL_DIR="$HOME/.languagetool"          # Default installation directory
 PLIST="$HOME/Library/LaunchAgents/org.languagetool.server.plist"  # launchd service configuration file
-LANGUAGETOOL_SERVER_JAR="/path/to/languagetool-server.jar"  # Path to languagetool-server.jar
+LANGUAGETOOL_SERVER_JAR="$INSTALL_DIR/LanguageTool-6.6/languagetool-server.jar"  # Path to languagetool-server.jar
 
 # Print section header
 section() {
@@ -48,15 +48,15 @@ if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
   exit 0
 fi
 
-# Check if the server is running
+# Step 1: Check if the server is running
 step "Checking if LanguageTool server is running..."
 if pgrep -f languagetool-server.jar > /dev/null; then
   step "LanguageTool server is running."
 else
-  fail "LanguageTool server is not running. Please ensure the server is active before uninstalling."
+  fail "LanguageTool server is not running. Cannot uninstall."
 fi
 
-# Verify if LanguageTool server is running and test the API
+# Step 2: Verify if the server's API is accessible
 step "Verifying LanguageTool server API..."
 if curl -s http://localhost:8081/v2/check > /dev/null; then
   success "LanguageTool API is responding."
@@ -64,54 +64,37 @@ else
   fail "LanguageTool API is not responding. Ensure the server is configured correctly."
 fi
 
-# Stop any running LanguageTool processes
-step "Stopping any running LanguageTool processes..."
+# Step 3: Stop running LanguageTool processes
+step "Stopping LanguageTool server..."
 if pgrep -f languagetool-server.jar > /dev/null; then
   pkill -f languagetool-server.jar
-  success "Stopped LanguageTool server processes"
+  success "Stopped LanguageTool server processes."
 else
-  echo "No running LanguageTool processes found"
+  echo "No running LanguageTool processes found."
 fi
 
-# Remove launchd service (if loaded)
+# Step 4: Remove launchd service configuration
 step "Removing launchd service..."
-if launchctl list | grep -q "org.languagetool.server"; then
-  launchctl unload "$PLIST" 2>/dev/null || true
-  success "LanguageTool launchd service unloaded"
-else
-  echo "No loaded LanguageTool service found"
-fi
-
-# Remove plist configuration files
-step "Removing service configuration files..."
 if [ -f "$PLIST" ]; then
   rm -f "$PLIST"
-  success "Removed LanguageTool service configuration"
+  success "Removed LanguageTool service configuration."
 else
-  echo "No LanguageTool plist configuration found"
+  echo "No LanguageTool service found."
 fi
 
-# Remove backup plist configuration file
-if [ -f "$PLIST.backup" ]; then
-  rm -f "$PLIST.backup"
-  success "Removed backup service configuration"
-fi
-
-# Remove LanguageTool installation files
+# Step 5: Remove LanguageTool files
+step "Removing LanguageTool installation directory..."
 if [ -d "$INSTALL_DIR" ]; then
-  step "Removing LanguageTool installation directory..."
   rm -rf "$INSTALL_DIR"
-  success "Removed LanguageTool installation files"
+  success "Removed LanguageTool files."
 else
-  echo "No installation directory found at $INSTALL_DIR"
+  echo "No LanguageTool installation directory found at $INSTALL_DIR."
 fi
 
-# Clean up temporary log files
-step "Cleaning up log files..."
-rm -f /tmp/languagetool.out /tmp/languagetool.err
-success "Removed LanguageTool log files"
-
-# Note: This script intentionally does not remove Java, as it might be used by other applications on your system
+# Step 6: Clean up temporary files
+step "Cleaning up temporary files..."
+rm -f /tmp/languagetool.out /tmp/languagetool.err /tmp/languagetool.log
+success "Cleaned up temporary files."
 
 section "Uninstallation Complete"
 echo -e "${GREEN}LanguageTool has been successfully removed from your system.${NC}"

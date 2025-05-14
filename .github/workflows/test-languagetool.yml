@@ -52,7 +52,10 @@ jobs:
       # Step 5: Verify if LanguageTool server is running
       - name: Verify LanguageTool server is running
         run: |
-          curl -s http://localhost:8081/v2/check || exit 1  # Exit with error if server is not running
+          curl -X POST http://localhost:8081/v2/check \
+            -d "text=Hello world" \
+            -d "language=en-US" \
+            -H "Content-Type: application/x-www-form-urlencoded" || exit 1  # Exit with error if server is not running
 
       # Step 6: Restart LanguageTool server if needed
       - name: Restart LanguageTool server
