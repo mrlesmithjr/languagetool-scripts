@@ -19,6 +19,7 @@ USE_SNAPSHOT=false
 PORT=8081
 INSTALL_DIR="$HOME/.languagetool"
 PLIST="$HOME/Library/LaunchAgents/org.languagetool.server.plist"
+LANGUAGETOOL_SERVER_JAR="$INSTALL_DIR/LanguageTool-${DEFAULT_VERSION}/languagetool-server.jar"
 
 # Parse command-line arguments for custom setup
 while [[ "$#" -gt 0 ]]; do

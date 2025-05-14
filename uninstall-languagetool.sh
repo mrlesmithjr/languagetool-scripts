@@ -48,7 +48,6 @@ if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
   exit 0
 fi
 
-
 # Check if the server is running
 step "Checking if LanguageTool server is running..."
 if pgrep -f languagetool-server.jar > /dev/null; then

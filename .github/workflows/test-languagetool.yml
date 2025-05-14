@@ -52,13 +52,13 @@ jobs:
       # Step 5: Verify if LanguageTool server is running
       - name: Verify LanguageTool server is running
         run: |
-          curl -s http://localhost:8081 || exit 1  # Exit with error if server is not running
+          curl -s http://localhost:8081/v2/check || exit 1  # Exit with error if server is not running
 
       # Step 6: Restart LanguageTool server if needed
       - name: Restart LanguageTool server
         run: |
           pkill -f languagetool-server.jar || true
-          nohup java -jar /path/to/languagetool-server.jar --port 8081 > /dev/null 2>&1 &
+          nohup java -jar ~/.languagetool/languagetool-server.jar --port 8081 > /dev/null 2>&1 &
 
       # Step 7: Test uninstall-languagetool.sh script
       - name: Test uninstall-languagetool.sh script
