@@ -24,12 +24,24 @@ jobs:
             echo "Homebrew not found. Installing..."
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           fi
+          # Verify Homebrew installation
+          if ! command -v brew &>/dev/null; then
+            echo "Homebrew installation failed!"
+            exit 1
+          fi
+          echo "Homebrew successfully installed."
 
       # Step 3: Install Java (OpenJDK 17)
       - name: Install Java
         run: |
           brew install openjdk@17
           sudo ln -sfn /usr/local/opt/openjdk@17/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-17.jdk
+          # Verify Java installation
+          if ! java -version &>/dev/null; then
+            echo "Java installation failed!"
+            exit 1
+          fi
+          echo "Java successfully installed."
 
       # Step 4: Run install-languagetool.sh to test installation
       - name: Test install-languagetool.sh script
@@ -42,15 +54,23 @@ jobs:
         run: |
           curl -s http://localhost:8081 || exit 1  # Exit with error if server is not running
 
-      # Step 6: Test uninstall-languagetool.sh script
+      # Step 6: Restart LanguageTool server if needed
+      - name: Restart LanguageTool server
+        run: |
+          pkill -f languagetool-server.jar || true
+          nohup java -jar /path/to/languagetool-server.jar --port 8081 > /dev/null 2>&1 &
+
+      # Step 7: Test uninstall-languagetool.sh script
       - name: Test uninstall-languagetool.sh script
         run: |
           chmod +x ./uninstall-languagetool.sh
           ./uninstall-languagetool.sh
 
-      # Step 7: Clean up any leftovers after uninstallation
+      # Step 8: Clean up leftovers
       - name: Clean up leftovers
         run: |
           rm -rf ~/.languagetool
           rm -f ~/Library/LaunchAgents/org.languagetool.server.plist
           rm -f /tmp/languagetool.out /tmp/languagetool.err
+          rm -f /tmp/languagetool.log
+          echo "Cleaned up leftovers."

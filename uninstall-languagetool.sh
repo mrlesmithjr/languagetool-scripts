@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # LanguageTool Uninstaller for macOS
-# Completely removes LanguageTool and related configurations
+# Completely removes LanguageTool and related configurations.
 # This script is part of a privacy-focused solution for offline grammar and spell checking.
 
 set -e  # Exit on error
@@ -32,6 +32,12 @@ success() {
   echo -e "${GREEN}✓ $1${NC}"
 }
 
+# Print error message and exit
+fail() {
+  echo -e "${RED}✗ $1${NC}"
+  exit 1
+}
+
 section "LanguageTool Uninstallation Process"
 
 # Confirm uninstallation
@@ -39,6 +45,14 @@ read -p "Are you sure you want to uninstall LanguageTool? This will remove the l
 if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
   echo "Uninstallation cancelled."
   exit 0
+fi
+
+# Check if the server is running
+step "Checking if LanguageTool server is running..."
+if pgrep -f languagetool-server.jar > /dev/null; then
+  step "LanguageTool server is running."
+else
+  fail "LanguageTool server is not running. Please ensure the server is active before uninstalling."
 fi
 
 # Stop any running LanguageTool processes
@@ -64,8 +78,11 @@ step "Removing service configuration files..."
 if [ -f "$PLIST" ]; then
   rm -f "$PLIST"
   success "Removed LanguageTool service configuration"
+else
+  echo "No LanguageTool plist configuration found"
 fi
 
+# Remove backup plist configuration file
 if [ -f "$PLIST.backup" ]; then
   rm -f "$PLIST.backup"
   success "Removed backup service configuration"
