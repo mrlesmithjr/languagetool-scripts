@@ -60,14 +60,18 @@ jobs:
       # Step 6: Restart LanguageTool server if needed
       - name: Restart LanguageTool server
         run: |
+          # Ensure the process is not running before starting the server
           pkill -f languagetool-server.jar || true
-          nohup java -jar ~/.languagetool/languagetool-server.jar --port 8081 > /dev/null 2>&1 &
+          # Provide the correct path to the JAR file
+          LANGUAGETOOL_SERVER_JAR="$HOME/.languagetool/languagetool-server.jar"
+          nohup java -jar $LANGUAGETOOL_SERVER_JAR --port 8081 > /dev/null 2>&1 &
+          echo "LanguageTool server started at http://localhost:8081"
 
       # Step 7: Test uninstall-languagetool.sh script
       - name: Test uninstall-languagetool.sh script
         run: |
           chmod +x ./uninstall-languagetool.sh
-          ./uninstall-languagetool.sh
+          ./uninstall-languagetool.sh --force
 
       # Step 8: Clean up leftovers
       - name: Clean up leftovers

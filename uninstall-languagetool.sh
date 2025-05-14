@@ -18,6 +18,24 @@ INSTALL_DIR="$HOME/.languagetool"          # Default installation directory
 PLIST="$HOME/Library/LaunchAgents/org.languagetool.server.plist"  # launchd service configuration file
 LANGUAGETOOL_SERVER_JAR="$INSTALL_DIR/LanguageTool-6.6/languagetool-server.jar"  # Path to languagetool-server.jar
 
+# Force mode flag (for CI environments)
+FORCE_MODE=false
+
+# Parse command line arguments
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    -f|--force) FORCE_MODE=true ;;   # Skip validation checks if --force flag is provided
+    -h|--help)
+      echo "Usage: $0 [options]"
+      echo "Options:"
+      echo "  -f, --force   Skip validation checks and remove LanguageTool files directly"
+      exit 0
+      ;;
+    *) echo "Unknown parameter: $1"; exit 1 ;;
+  esac
+  shift
+done
+
 # Print section header
 section() {
   echo -e "\n${BLUE}==== $1 ====${NC}"
@@ -48,20 +66,25 @@ if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
   exit 0
 fi
 
-# Step 1: Check if the server is running
-step "Checking if LanguageTool server is running..."
-if pgrep -f languagetool-server.jar > /dev/null; then
-  step "LanguageTool server is running."
+# Skip validation checks in CI environments or if --force flag is set
+if [ "$FORCE_MODE" = true ]; then
+  step "Running in force mode - skipping validation checks"
 else
-  fail "LanguageTool server is not running. Cannot uninstall."
-fi
+  # Step 1: Check if the server is running
+  step "Checking if LanguageTool server is running..."
+  if pgrep -f languagetool-server.jar > /dev/null; then
+    step "LanguageTool server is running."
+  else
+    fail "LanguageTool server is not running. Cannot uninstall."
+  fi
 
-# Step 2: Verify if the server's API is accessible
-step "Verifying LanguageTool server API..."
-if curl -s http://localhost:8081/v2/check > /dev/null; then
-  success "LanguageTool API is responding."
-else
-  fail "LanguageTool API is not responding. Ensure the server is configured correctly."
+  # Step 2: Verify if the server's API is accessible
+  step "Verifying LanguageTool server API..."
+  if curl -s http://localhost:8081/v2/check > /dev/null; then
+    success "LanguageTool API is responding."
+  else
+    fail "LanguageTool API is not responding. Ensure the server is configured correctly."
+  fi
 fi
 
 # Step 3: Stop running LanguageTool processes
