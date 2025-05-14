@@ -35,6 +35,7 @@ This repository contains scripts to set up a **local LanguageTool server** on **
    ```
 
 3. Run the installation script:
+
    ```bash
    ./install-languagetool.sh
    ```
@@ -73,6 +74,7 @@ For **VSCode** integration, use the **LTeX extension** to connect to the **local
 
 1. Install the **LTeX** extension in **VSCode**.
 2. Configure the extension to use your local server:
+
    ```json
    {
      "ltex.server": "http://127.0.0.1:8081",
@@ -90,6 +92,14 @@ To remove **LanguageTool** completely from your system:
 ./uninstall-languagetool.sh
 ```
 
+### **Uninstall Script with Force Mode**:
+
+For automated environments (such as CI/CD), use the `--force` flag to skip validation checks:
+
+```bash
+./uninstall-languagetool.sh --force
+```
+
 ## Troubleshooting
 
 If you encounter issues:
@@ -98,6 +108,7 @@ If you encounter issues:
 - Verify the server is running: `curl -I http://localhost:8081`
 - Test the API directly: `curl -d "language=en-US&text=This is a test." http://localhost:8081/v2/check`
 - Restart the service:
+
   ```bash
   launchctl unload ~/Library/LaunchAgents/org.languagetool.server.plist
   launchctl load ~/Library/LaunchAgents/org.languagetool.server.plist
