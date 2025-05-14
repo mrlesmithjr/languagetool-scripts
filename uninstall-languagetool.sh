@@ -16,6 +16,7 @@ NC='\033[0m' # No Color
 # Configuration
 INSTALL_DIR="$HOME/.languagetool"          # Default installation directory
 PLIST="$HOME/Library/LaunchAgents/org.languagetool.server.plist"  # launchd service configuration file
+LANGUAGETOOL_SERVER_JAR="/path/to/languagetool-server.jar"  # Path to languagetool-server.jar
 
 # Print section header
 section() {
@@ -47,12 +48,21 @@ if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
   exit 0
 fi
 
+
 # Check if the server is running
 step "Checking if LanguageTool server is running..."
 if pgrep -f languagetool-server.jar > /dev/null; then
   step "LanguageTool server is running."
 else
   fail "LanguageTool server is not running. Please ensure the server is active before uninstalling."
+fi
+
+# Verify if LanguageTool server is running and test the API
+step "Verifying LanguageTool server API..."
+if curl -s http://localhost:8081/v2/check > /dev/null; then
+  success "LanguageTool API is responding."
+else
+  fail "LanguageTool API is not responding. Ensure the server is configured correctly."
 fi
 
 # Stop any running LanguageTool processes

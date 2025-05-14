@@ -49,7 +49,7 @@ jobs:
           chmod +x ./install-languagetool.sh
           ./install-languagetool.sh --version 6.6
 
-      # Step 5: Verify if LanguageTool is running
+      # Step 5: Verify if LanguageTool server is running
       - name: Verify LanguageTool server is running
         run: |
           curl -s http://localhost:8081 || exit 1  # Exit with error if server is not running
